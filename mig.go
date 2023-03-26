@@ -64,7 +64,7 @@ func getMigratedFiles(tx *sql.Tx) ([]Migration, error) {
 	// Get all already migrated files
 
 	migratedFiles := make([]Migration, 0)
-	rows, err := tx.Query("SELECT * FROM migrations")
+	rows, err := tx.Query("SELECT id, name, created_at FROM migrations")
 	if err != nil {
 		return migratedFiles, err
 	}
@@ -72,7 +72,7 @@ func getMigratedFiles(tx *sql.Tx) ([]Migration, error) {
 	for rows.Next() {
 		var id int
 		var name string
-		var created_at time.Time
+		var created_at sql.NullString
 		err = rows.Scan(&id, &name, &created_at)
 		if err != nil {
 			return migratedFiles, err
@@ -116,12 +116,12 @@ func contains(migratedFiles []Migration, file Migration) bool {
 func migrateFile(file Migration, tx *sql.Tx) error {
 
 	// Migrate file
-	_, err := tx.Query(file.Query)
+	_, err := tx.Exec(file.Query)
 	if err != nil {
 		return err
 	}
 
-	result, err := tx.Exec("INSERT INTO migrations (name, created_at) VALUES ($1, $2)", file, time.Now())
+	result, err := tx.Exec("INSERT INTO migrations (name, created_at) VALUES ($1, $2)", file, time.Now().UTC().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func migrateFile(file Migration, tx *sql.Tx) error {
 
 func MigratePG(dir string, tx *sql.Tx) (err error) {
 
-	_, err = tx.Query("CREATE TABLE IF NOT EXISTS migrations (id SERIAL PRIMARY KEY, name VARCHAR(255), created_at TIMESTAMP);")
+	_, err = tx.Exec("CREATE TABLE IF NOT EXISTS migrations (id SERIAL PRIMARY KEY, name VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)")
 	if err != nil {
 		return err
 	}
