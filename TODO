@@ -1,0 +1,9 @@
+# Write Sql Simple Migrator
+
+Logic:
+
+1. Create migrations table if not exists
+2. Read sql files from directory
+3. Read migrations table
+4. Compare sql files with migrations table
+5. If sql file is not in migrations table, execute sql file and insert into migrations table with current timestamp otherwise skip
